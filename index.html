@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Flappy Heart - Emily Blais</title>
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background: #d8c1ff;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  canvas {
+    display: block;
+    background: #d8c1ff;
+  }
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+// Set canvas to fill the screen
+function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+}
+resizeCanvas();
+window.addEventListener("resize", resizeCanvas);
+
+// Game world (virtual coordinates)
+const WORLD_WIDTH = 400;
+const WORLD_HEIGHT = 600;
+
+// Scaling factor for screen
+function getScale() {
+    return Math.min(canvas.width / WORLD_WIDTH, canvas.height / WORLD_HEIGHT);
+}
+
+// Bird (heart) variables
+let bird = { x: 80, y: 300, size: 20, velocity: 0 };
+const gravity = 0.5;
+const jump = -4.5;
+
+// Pipes
+let pipes = [];
+const pipeWidth = 40;
+const pipeGap = 150;
+const pipeSpeed = 2.5;
+const TOTAL_PIPES = 100;
+
+// Score & Game Over
+let score = 0;
+let gameOver = false;
+
+// Pre-generate 100 pipes
+function generatePipes() {
+    pipes = [];
+    let xPos = WORLD_WIDTH + 100;
+    for (let i = 0; i < TOTAL_PIPES; i++) {
+        const height = Math.random() * 250 + 75;
+        pipes.push({ x: xPos, top: height, bottom: height + pipeGap, passed: false });
+        xPos += 200 + Math.random() * 100;
+    }
+}
+
+// Controls
+function flap() {
+    if(!gameOver) bird.velocity = jump;
+    else resetGame();
+}
+canvas.addEventListener("touchstart", flap);
+canvas.addEventListener("mousedown", flap);
+
+function resetGame() { 
+    bird.y = WORLD_HEIGHT / 2; 
+    bird.velocity = 0; 
+    score = 0; 
+    gameOver = false; 
+    generatePipes();
+}
+
+// Collision detection with margin
+function collide(pipe){
+    const margin = 5;
+    return bird.x + bird.size - margin > pipe.x &&
+           bird.x - bird.size + margin < pipe.x + pipeWidth &&
+           (bird.y - bird.size + margin < pipe.top || bird.y + bird.size - margin > pipe.bottom);
+}
+
+// Update game
+function update() {
+    if(gameOver) return;
+
+    bird.velocity += gravity;
+    bird.y += bird.velocity;
+
+    if(bird.y < 0 || bird.y > WORLD_HEIGHT) gameOver = true;
+
+    for (let pipe of pipes) {
+        pipe.x -= pipeSpeed;
+
+        if(!pipe.passed && bird.x > pipe.x + pipeWidth){
+            pipe.passed = true;
+            score++;
+        }
+
+        if(collide(pipe)) gameOver = true;
+    }
+}
+
+// Draw heart
+function drawHeart(x, y, size, color) {
+    const darkColor = shadeColor(color, -50);
+    ctx.fillStyle = darkColor;
+    ctx.strokeStyle = "black";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    const topCurveHeight = size * 0.3;
+    ctx.moveTo(x, y + topCurveHeight);
+    ctx.bezierCurveTo(x - size/2, y - topCurveHeight, x - size, y + size/2, x, y + size);
+    ctx.bezierCurveTo(x + size, y + size/2, x + size/2, y - topCurveHeight, x, y + topCurveHeight);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+}
+
+// Darken color helper
+function shadeColor(color, percent) {
+    let f = parseInt(color.slice(1),16),
+        t = percent < 0 ? 0 : 255,
+        p = percent < 0 ? -percent : percent,
+        R = f>>16, G = f>>8&0x00FF, B = f&0x0000FF;
+    return "#" + (0x1000000 + (Math.round((t-R)*p/100)+R)*0x10000 + 
+                  (Math.round((t-G)*p/100)+G)*0x100 + 
+                  (Math.round((t-B)*p/100)+B)).toString(16).slice(1);
+}
+
+// Draw overlay banner
+function drawBanner(scale) {
+    ctx.fillStyle = "rgba(0,0,0,0.5)";
+    ctx.fillRect(0,0,WORLD_WIDTH*scale,40*scale);
+    ctx.fillStyle = "white";
+    ctx.font = `${18*scale}px Arial`;
+    ctx.textAlign = "center";
+    ctx.fillText("Designed by Emily Blais", WORLD_WIDTH*scale/2,28*scale);
+}
+
+// Draw everything
+function draw() {
+    const scale = getScale();
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    const offsetX = (canvas.width - WORLD_WIDTH*scale)/2;
+    const offsetY = (canvas.height - WORLD_HEIGHT*scale)/2;
+
+    ctx.save();
+    ctx.translate(offsetX, offsetY);
+    ctx.scale(scale, scale);
+
+    // Pipes
+    ctx.fillStyle = "#a2d2ff";
+    for(let pipe of pipes){
+        ctx.fillRect(pipe.x,0,pipeWidth,pipe.top);
+        ctx.fillRect(pipe.x,pipe.bottom,pipeWidth,WORLD_HEIGHT);
+    }
+
+    // Heart
+    drawHeart(bird.x, bird.y, bird.size, "#ffb6c1");
+
+    // Score
+    ctx.fillStyle = "white";
+    ctx.font = "28px Arial";
+    ctx.fillText("Score: "+score, 10, 60);
+
+    // Banner overlay
+    drawBanner(1);
+
+    // Game Over
+    if(gameOver){
+        ctx.font = "48px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText("Game Over", WORLD_WIDTH/2, WORLD_HEIGHT/2-20);
+        ctx.font = "24px Arial";
+        ctx.fillText("Tap to Restart", WORLD_WIDTH/2, WORLD_HEIGHT/2+20);
+        ctx.textAlign = "left";
+    }
+
+    ctx.restore();
+}
+
+// Loop
+function loop() {
+    update();
+    draw();
+    requestAnimationFrame(loop);
+}
+
+// Initialize
+generatePipes();
+loop();
+
+</script>
+</body>
+</html>
