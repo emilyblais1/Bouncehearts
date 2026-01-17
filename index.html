@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>Flappy Heart - Emily Blais</title>
+<title>Bouncy Hearts - Emily Blais</title>
 <style>
   html, body {
     margin: 0;
@@ -165,11 +165,15 @@ function draw() {
     ctx.translate(offsetX, offsetY);
     ctx.scale(scale, scale);
 
-    // Pipes
-    ctx.fillStyle = "#a2d2ff";
+    // Pipes (filled + black outline)
+    ctx.fillStyle = "#a2d2ff";  // pastel blue
+    ctx.strokeStyle = "black";   // outline
+    ctx.lineWidth = 2;
     for(let pipe of pipes){
-        ctx.fillRect(pipe.x,0,pipeWidth,pipe.top);
-        ctx.fillRect(pipe.x,pipe.bottom,pipeWidth,WORLD_HEIGHT);
+        ctx.fillRect(pipe.x, 0, pipeWidth, pipe.top);
+        ctx.strokeRect(pipe.x, 0, pipeWidth, pipe.top);
+        ctx.fillRect(pipe.x, pipe.bottom, pipeWidth, WORLD_HEIGHT);
+        ctx.strokeRect(pipe.x, pipe.bottom, pipeWidth, WORLD_HEIGHT);
     }
 
     // Heart
