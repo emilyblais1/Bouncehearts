@@ -49,12 +49,23 @@ let bird = { x: 80, y: 300, size: 20, velocity: 0 };
 const gravity = 0.5;
 const jump = -4.5;
 
-// Pipes
-let pipes = [];
-const pipeWidth = 40;
-const pipeGap = 150;
-const pipeSpeed = 2.5;
-const TOTAL_PIPES = 100;
+ // Pipes (filled + black outline)
+for (let pipe of pipes) {
+    // Top pipe
+    ctx.beginPath();
+    ctx.fillStyle = "#a2d2ff";  // pastel blue
+    ctx.strokeStyle = "black";   // outline
+    ctx.lineWidth = 3;            // slightly thicker for visibility
+    ctx.rect(pipe.x, 0, pipeWidth, pipe.top);
+    ctx.fill();
+    ctx.stroke();
+
+    // Bottom pipe
+    ctx.beginPath();
+    ctx.rect(pipe.x, pipe.bottom, pipeWidth, WORLD_HEIGHT);
+    ctx.fill();
+    ctx.stroke();
+}
 
 // Score & Game Over
 let score = 0;
